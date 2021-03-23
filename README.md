@@ -5,6 +5,7 @@ It consists of a master process as well as various workers. The master when give
 ## Required libraries
 * BeautifulSoup4
 * Requests
+* Pyro5
 
 ## Team SpaceBar
 * Adarsh Dharmadevan
