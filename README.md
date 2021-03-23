@@ -6,9 +6,25 @@ It consists of a master process as well as various workers. The master when give
 * BeautifulSoup4
 * Requests
 * Pyro5
-To activate virtual env with the above libraries, execute
+
+## Usage
+To activate virtual env with the above libraries, execute in each terminal
     `source project_env/bin/activate`
     
+To start nameserver, execute in a terminal
+    `pyro5-ns`
+
+To start workers, execute the follwing in as many seperate terminals as required
+    `python3 worker.py`
+
+To start master, execute the follwing in a seperate terminal
+    `python3 master.py`
+
+Currently supported queries:
+* seed <url>
+
+use ctrl-d to exit
+
 ## Team SpaceBar
 * Adarsh Dharmadevan
 * Apoorva Thirupathi
