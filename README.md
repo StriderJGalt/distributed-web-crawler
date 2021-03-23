@@ -10,7 +10,7 @@ It consists of a master process as well as various workers. The master when give
 ## Usage
 To activate virtual env with the above libraries, execute in each terminal
     `source project_env/bin/activate`
-    
+
 To start nameserver, execute in a terminal
     `pyro5-ns`
 
@@ -21,7 +21,7 @@ To start master, execute the follwing in a seperate terminal
     `python3 master.py`
 
 Currently supported queries:
-* seed <url>
+* seed url_of_root_page
 
 use ctrl-d to exit
 
