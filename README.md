@@ -6,7 +6,9 @@ It consists of a master process as well as various workers. The master when give
 * BeautifulSoup4
 * Requests
 * Pyro5
-
+To activate virtual env with the above libraries, execute
+    `source project_env/bin/activate`
+    
 ## Team SpaceBar
 * Adarsh Dharmadevan
 * Apoorva Thirupathi
