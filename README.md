@@ -29,5 +29,5 @@ use ctrl-d to exit
 * Adarsh Dharmadevan
 * Apoorva Thirupathi
 * Gadela Keshav
-* Guru Ravishankar
+* Guru Ravi Shanker
 * Joseph Cherukara
