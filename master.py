@@ -1,9 +1,11 @@
 import Pyro5.api 
 from sys import stdin
+import networkx as nx 
+import matplotlib.pyplot as plt 
 
+G = nx.DiGraph() 
 urls_done = set()
 adj_graph = {}
-
 def process(line):
     # get worker nodes
     ns = Pyro5.api.locate_ns()
@@ -21,15 +23,37 @@ def process(line):
         if ls[1] in urls_done:
             print("The given URL has already been scraped")
             return
-        child_urls, error_urls = workers[0].scrape([ls[1]]) #remember input is list of urls not url
+        n = int(ls[2])
+        urls = [ls[1]]
+        while n:
+            n -= 1
+            for url in urls:
+                if url in urls_done:
+                    urls.remove(url)
+                    continue
+            child_urls, error_urls = workers[0].scrape(urls) #remember input is list of urls not url
+            for url in urls:
+                urls_done.add(url)
 
-        urls_done.add(ls[1])
-        adj_graph[ls[1]] = set()
-        for i in child_urls[ls[1]]:
-            if i not in adj_graph[ls[1]]:
-                adj_graph[ls[1]].add(i)
+            # G.add_node(ls[1])
+            for url in child_urls:
+                adj_graph[url] = set()
+                for i in child_urls[url]:
+                    if i not in adj_graph[url]:
+                        adj_graph[url].add(i)
+
+                    G.add_node(i)
+                    G.add_edge(url, i)
+
+            temp = []
+            for a in child_urls:
+                temp.extend(child_urls[a])
+            urls = temp
 
     if ls[0] == 'print':
+        # nx.draw(G,with_labels=True) 
+        # plt.show()
+        print(adj_graph)
         if ls[1] in adj_graph:
             print(adj_graph[ls[1]])
         else:

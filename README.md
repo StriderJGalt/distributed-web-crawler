@@ -21,15 +21,16 @@ To start master, execute the follwing in a seperate terminal
     `python3 master.py`
 
 Currently supported queries:
-* seed url_of_root_page
-  - Srapes the urls present in the url_of_root_page.
-  Eg: seed `https://iiit.ac.in`
+* seed url_of_root_page n
+  - Srapes the urls present in the url_of_root_page uptill depth n with respect to bfs.
+  Eg: `seed https://iiit.ac.in 2`
+      Scrapes all the urls till depth 2 from `iiit.ac.in` url(at depth 1).
 * print url_of_root_page
   - Prints the adjacency list of the url_of_root_page.
-  Eg: print `https://iiit.ac.in`
+  Eg: `print https://iiit.ac.in`
 * update url_of_root_page
   - Updates the adjacency list of the url_of_root_page.
-  Eg: update `https://iiit.ac.in`
+  Eg: `update https://iiit.ac.in`
 
 
 use ctrl-d to exit
