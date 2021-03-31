@@ -15,7 +15,6 @@ def process(line):
         if server != 'Pyro.NameServer':
             worker_uris.append(server_list[server])
     workers = [Pyro5.client.Proxy(uri) for uri in worker_uris]
-
     # parse and process line
     ls = line.split()
     if ls[0] == 'seed':
@@ -31,29 +30,58 @@ def process(line):
                 if url in urls_done:
                     urls.remove(url)
                     continue
-            child_urls, error_urls = workers[0].scrape(urls) #remember input is list of urls not url
-            for url in urls:
-                urls_done.add(url)
+            dist = len(urls)//len(workers)
+            
+            if dist > 0:
+                temp = []
+                for i in range(len(workers)):
+                    child_urls, error_urls = workers[i].scrape(urls[i * dist: min(dist * (i + 1), len(urls))]) #remember input is list of urls not url
+                    for url in child_urls:
+                        urls_done.add(url)
+                    for url in child_urls:
+                        adj_graph[url] = set()
+                        for i in child_urls[url]:
+                            if i not in adj_graph[url]:
+                                adj_graph[url].add(i)
+
+                    for a in child_urls:
+                        temp.extend(child_urls[a])
+
+
+            else:
+                child_urls, error_urls = workers[0].scrape(urls)
+                for url in urls:
+                    urls_done.add(url)
+                for url in child_urls:
+                    adj_graph[url] = set()
+                    for i in child_urls[url]:
+                        if i not in adj_graph[url]:
+                            adj_graph[url].add(i)
+                temp = []
+                for a in child_urls:
+                    temp.extend(child_urls[a])
+            urls = temp
+
 
             # G.add_node(ls[1])
-            for url in child_urls:
-                adj_graph[url] = set()
-                for i in child_urls[url]:
-                    if i not in adj_graph[url]:
-                        adj_graph[url].add(i)
+            # for url in child_urls:
+            #     adj_graph[url] = set()
+            #     for i in child_urls[url]:
+            #         if i not in adj_graph[url]:
+            #             adj_graph[url].add(i)
 
-                    G.add_node(i)
-                    G.add_edge(url, i)
+                    # G.add_node(i)
+                    # G.add_edge(url, i)
 
-            temp = []
-            for a in child_urls:
-                temp.extend(child_urls[a])
-            urls = temp
+            # temp = []
+            # for a in child_urls:
+            #     temp.extend(child_urls[a])
+            # urls = temp
 
     if ls[0] == 'print':
         # nx.draw(G,with_labels=True) 
         # plt.show()
-        print(adj_graph)
+        # print(adj_graph)
         if ls[1] in adj_graph:
             print(adj_graph[ls[1]])
         else:
