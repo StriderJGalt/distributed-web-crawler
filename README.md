@@ -6,6 +6,7 @@ It consists of a master process as well as various workers. The master when give
 * BeautifulSoup4
 * Requests
 * Pyro5
+* Pyviz
 
 ## Usage
 To activate virtual env with the above libraries, execute in each terminal
@@ -25,11 +26,11 @@ Currently supported queries:
   - Srapes the urls present in the url_of_root_page uptill depth n with respect to bfs.
   Eg: `seed https://iiit.ac.in 2`
       Scrapes all the urls till depth 2 from `iiit.ac.in` url(at depth 1).
-* print url_of_root_page
-  - Prints the adjacency list of the url_of_root_page.
-  Eg: `print https://iiit.ac.in`
-* update url_of_root_page
-  - Updates the adjacency list of the url_of_root_page.
+* graph [-s]
+  - Saves the graph to specified file and open in browser. Use -s flag if u need to view graph settings.
+  Eg: `graph -s`
+* update url
+  - Updates the adjacency list of the url
   Eg: `update https://iiit.ac.in`
 
 
