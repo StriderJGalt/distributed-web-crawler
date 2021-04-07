@@ -66,7 +66,7 @@ def process(line):
                     continue
 
             dist = len(urls)//len(workers)
-            print(dist, len(urls))
+            # print(dist, len(urls))
             if dist > 0:
                 temp = []
                 threads = []
@@ -79,7 +79,7 @@ def process(line):
                     threads[i].join()
 
             else:
-                print("dsadsadasd")
+                # print("dsadsadasd")
                 child_urls, error_urls = workers[0].scrape(urls)
                 for url in urls:
                     urls_done.add(url)
@@ -91,7 +91,7 @@ def process(line):
                 temp = []
                 for a in child_urls:
                     temp.extend(child_urls[a])
-                print(temp)
+                # print(temp)
             urls = temp
 
 
@@ -113,7 +113,7 @@ def process(line):
     if ls[0] == 'print':
         nx.draw(G,with_labels=True) 
         plt.show()
-        print(adj_graph)
+        # print(adj_graph)
         if ls[1] in adj_graph:
             print(adj_graph[ls[1]])
         else:
