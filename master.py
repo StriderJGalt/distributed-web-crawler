@@ -1,45 +1,34 @@
 import Pyro5.api 
 from sys import stdin
-import networkx as nx 
-import matplotlib.pyplot as plt 
-import multiprocessing
-import threading 
+from pyvis.network import Network
+import threading
+
+
+MIN_URL_LIMIT = 20
+
 
 lock = threading.Lock()
+scraped_urls = set()
+adjacency_list = {}
+workers = []
+next_level_urls = set()
 
-G = nx.DiGraph() 
-urls_done = set()
-adj_graph = {}
-temp = []
-
-def scraping_function(i, urls):
-    ns = Pyro5.api.locate_ns()
-    server_list = ns.list()
-    worker_uris = []
-
-    for server in server_list:
-        if server != 'Pyro.NameServer':
-            worker_uris.append(server_list[server])
-    workers = [Pyro5.client.Proxy(uri) for uri in worker_uris]
-
-    child_urls, error_urls = workers[i].scrape(urls)
+def scrape(worker_uri,urls):
+    print("scraping")
+    print(urls)
+    worker = Pyro5.client.Proxy(worker_uri)
+    child_dict, error_urls = worker.scrape(urls)
     lock.acquire()
-    
-    for url in child_urls:
-        urls_done.add(url)
-    for url in child_urls:
-        adj_graph[url] = set()
-        for i in child_urls[url]:
-            if i not in adj_graph[url]:
-                adj_graph[url].add(i)
-
-    for a in child_urls:
-        temp.extend(child_urls[a])
-
+    for parent_url in child_dict.keys():
+        child_urls = child_dict[parent_url]
+        scraped_urls.add(parent_url)
+        if child_urls:
+            adjacency_list[parent_url] = child_urls
+            next_level_urls.update(child_urls)
     lock.release()
 
-
 def process(line):
+
     # get worker nodes
     ns = Pyro5.api.locate_ns()
     server_list = ns.list()
@@ -47,92 +36,99 @@ def process(line):
     for server in server_list:
         if server != 'Pyro.NameServer':
             worker_uris.append(server_list[server])
-    workers = [Pyro5.client.Proxy(uri) for uri in worker_uris]
-    # process_pool = multiprocessing.Pool(len(workers))
-    # parse and process line
+    if not worker_uris:
+        print("No workers detected")
+        return
+
     ls = line.split()
+
     if ls[0] == 'seed':
-        # below code is for test purpose only
-        if ls[1] in urls_done:
-            print("The given URL has already been scraped")
+        if len(ls) != 3:
+            print("Error: invalid number of arguments!")
+            print("Usage: seed seed_url depth_pages_to_be_scraped")
             return
-        n = int(ls[2])
-        urls = [ls[1]]
-        while n:
-            n -= 1
-            for url in urls:
-                if url in urls_done:
-                    urls.remove(url)
-                    continue
 
-            dist = len(urls)//len(workers)
-            # print(dist, len(urls))
-            if dist > 0:
-                temp = []
-                threads = []
-                for i in range(len(workers)):
-                    t = threading.Thread(target=scraping_function, args=(i, urls[i * dist: min(dist * (i + 1), len(urls))]))
-                    threads.append(t)
-                    t.start()
+        scrape_depth = int(ls[2])
+        urls_to_be_scraped = {ls[1]}
+        next_level_urls.clear()
 
-                for i in range(1,len(threads)):
-                    threads[i].join()
+        for l in range(scrape_depth):
 
+            # remove already scraped urls and add their children
+            urls_to_be_scraped_list = list(urls_to_be_scraped)
+            for url in urls_to_be_scraped_list:
+                if url in scraped_urls:
+                    urls_to_be_scraped.remove(url)
+                    next_level_urls.update(adjacency_list[url])
+
+            
+            # scrape the urls using the workers
+            num_urls_per_worker = max(
+                (len(urls_to_be_scraped)//len(worker_uris))+1,
+                MIN_URL_LIMIT)
+            worker_index = 0
+            threads = {}
+            while urls_to_be_scraped:
+                urls = []
+                for i in range(min(len(urls_to_be_scraped),
+                               num_urls_per_worker)):
+                    urls.append(urls_to_be_scraped.pop())
+                threads[worker_index] = threading.Thread(
+                    target=scrape, args=(worker_uris[worker_index],urls))
+                threads[worker_index].start()
+                worker_index += 1
+            for i in range(worker_index):
+                threads[i].join()
+
+            # have to write code to handle error urls
+
+            # loading next level of urls to be scraped
+            urls_to_be_scraped = next_level_urls.copy()
+        
+        print("DONE")
+        return
+
+    if ls[0] == 'graph':
+        net = Network()
+        net.add_nodes(scraped_urls)
+        for x in adjacency_list.keys():
+            for y in adjacency_list[x]:
+                net.add_node(y) #since error urls are not handled rn
+                net.add_edge(x,y)
+        # net.enable_physics(False)
+        if len(ls)>1:
+            if ls[1] == "-s":
+                net.show_buttons()
             else:
-                # print("dsadsadasd")
-                child_urls, error_urls = workers[0].scrape(urls)
-                for url in urls:
-                    urls_done.add(url)
-                for url in child_urls:
-                    adj_graph[url] = set()
-                    for i in child_urls[url]:
-                        if i not in adj_graph[url]:
-                            adj_graph[url].add(i)
-                temp = []
-                for a in child_urls:
-                    temp.extend(child_urls[a])
-                # print(temp)
-            urls = temp
-
-
-            # G.add_node(ls[1])
-            # for url in child_urls:
-            #     adj_graph[url] = set()
-            #     for i in child_urls[url]:
-            #         if i not in adj_graph[url]:
-            #             adj_graph[url].add(i)
-
-                    # G.add_node(i)
-                    # G.add_edge(url, i)
-
-            # temp = []
-            # for a in child_urls:
-            #     temp.extend(child_urls[a])
-            # urls = temp
-
-    if ls[0] == 'print':
-        nx.draw(G,with_labels=True) 
-        plt.show()
-        # print(adj_graph)
-        if ls[1] in adj_graph:
-            print(adj_graph[ls[1]])
-        else:
-            print("The URL has not been scraped")
+                print("Command not supported")
+                return
+        net.show("graph.html")
+        print("DONE")        
+        return
 
     if ls[0] == 'update':
-        child_urls, error_urls = workers[0].scrape([ls[1]]) #remember input is list of urls not url
-        if ls[1] not in urls_done:
-            urls_done.add(ls[1])
-        adj_graph[ls[1]] = set()
-        for i in child_urls[ls[1]]:
-            if i not in adj_graph[ls[1]]:
-                adj_graph[ls[1]].add(i)
+        url = ls[1]
+        if url not in scraped_urls:
+            print("Given url has not been scraped yet")
+            print("please use seed command instead")
+            return
+        worker = Pyro5.client.Proxy(worker_uris[0])
+        child_urls, error_urls = workers.scrape([url])
+        adjacency_list[url].update(child_urls[url])
+        print("DONE")
+        return
+
+    else:
+        print("Command not supported")
+        return
 
 
 if __name__ == '__main__':
     for line in stdin:
-        if line == '' or line == 'quit': # If empty string is read then stop the loop
+        if line == '\n':
+            continue
+        if line == '' or line == 'quit\n': 
             break
-        process(line) # perform some operation(s) on given string
-
-
+        process(line) 
+    
+   
