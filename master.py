@@ -10,14 +10,21 @@ MIN_URL_LIMIT = 20
 lock = threading.Lock()
 scraped_urls = set()
 adjacency_list = {}
-workers = []
+worker_uris = []
 next_level_urls = set()
 
 def scrape(worker_uri,urls):
     print("scraping")
     print(urls)
-    worker = Pyro5.client.Proxy(worker_uri)
-    child_dict, error_urls = worker.scrape(urls)
+    child_dict = {}
+    try:
+        worker = Pyro5.client.Proxy(worker_uri)
+        child_dict, error_urls = worker.scrape(urls)
+    except:
+        print("".join(Pyro5.errors.get_pyro_traceback()))
+        error_urls = urls
+        worker_uris.remove(worker_uri)
+    print("child_dict = {}".format(child_dict))
     lock.acquire()
     for parent_url in child_dict.keys():
         child_urls = child_dict[parent_url]
@@ -25,6 +32,7 @@ def scrape(worker_uri,urls):
         if child_urls:
             adjacency_list[parent_url] = child_urls
             next_level_urls.update(child_urls)
+    print("next_level_urls = {}".format(next_level_urls))
     lock.release()
 
 def process(line):
@@ -35,10 +43,16 @@ def process(line):
     worker_uris = []
     for server in server_list:
         if server != 'Pyro.NameServer':
-            worker_uris.append(server_list[server])
+            try:
+                worker = Pyro5.client.Proxy(server_list[server])
+                if worker.test():
+                    worker_uris.append(server_list[server])
+            except:
+                pass
     if not worker_uris:
         print("No workers detected")
         return
+    print(worker_uris)
 
     ls = line.split()
 
@@ -54,6 +68,7 @@ def process(line):
 
         for l in range(scrape_depth):
 
+            # print("urls_to_be_scraped = {}".format(urls_to_be_scraped))
             # remove already scraped urls and add their children
             urls_to_be_scraped_list = list(urls_to_be_scraped)
             for url in urls_to_be_scraped_list:
@@ -117,6 +132,9 @@ def process(line):
         adjacency_list[url].update(child_urls[url])
         print("DONE")
         return
+
+    if ls[0] == 'print':
+        print(adjacency_list)
 
     else:
         print("Command not supported")
