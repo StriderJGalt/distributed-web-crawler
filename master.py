@@ -23,16 +23,18 @@ def scrape(worker_uri,urls):
     except:
         print("".join(Pyro5.errors.get_pyro_traceback()))
         error_urls = urls
-        worker_uris.remove(worker_uri)
-    print("child_dict = {}".format(child_dict))
+        if worker_uri in worker_uris:
+            worker_uris.remove(worker_uri)
     lock.acquire()
+    # print("child_dict = {}".format(child_dict))
+    # print("error_urls = {}".format(child_dict))
     for parent_url in child_dict.keys():
         child_urls = child_dict[parent_url]
         scraped_urls.add(parent_url)
         if child_urls:
             adjacency_list[parent_url] = child_urls
             next_level_urls.update(child_urls)
-    print("next_level_urls = {}".format(next_level_urls))
+    # print("next_level_urls = {}".format(next_level_urls))
     lock.release()
 
 def process(line):
@@ -52,7 +54,7 @@ def process(line):
     if not worker_uris:
         print("No workers detected")
         return
-    print(worker_uris)
+    # print(worker_uris)
 
     ls = line.split()
 
@@ -128,7 +130,7 @@ def process(line):
             print("please use seed command instead")
             return
         worker = Pyro5.client.Proxy(worker_uris[0])
-        child_urls, error_urls = workers.scrape([url])
+        child_urls, error_urls = worker.scrape([url])
         adjacency_list[url].update(child_urls[url])
         print("DONE")
         return

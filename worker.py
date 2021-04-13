@@ -13,16 +13,19 @@ class Worker:
         child_urls = {}
         error_urls = []
         for url in url_list:
-            # try:
-            r = self.session.get(url)
-            withoutrender = r.html.absolute_links
-            # r.html.render()
-            withrender = r.html.absolute_links
-            child_urls[url] = withoutrender.union(withrender)
+            try:
+                r = self.session.get(url)
+                withoutrender = r.html.absolute_links
+                # r.html.render()
+                withrender = r.html.absolute_links
+                child_urls[url] = withoutrender.union(withrender)
                 # self.pages[url] = r.html
-            # except:
-                # error_urls.append(url)
+            except:
+                error_urls.append(url)
+        print("child URLs")
         print(child_urls)
+        print("error URLs")
+        print(error_urls)
         return child_urls, error_urls
 
     def get_pages(self,urls):
