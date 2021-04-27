@@ -19,13 +19,13 @@ class Worker:
                 # r.html.render()
                 withrender = r.html.absolute_links
                 child_urls[url] = withoutrender.union(withrender)
-                # self.pages[url] = r.html
+                self.pages[url] = r.html
             except:
                 error_urls.append(url)
-        print("child URLs")
-        print(child_urls)
-        print("error URLs")
-        print(error_urls)
+        # print("child URLs")
+        # print(child_urls)
+        # print("error URLs")
+        # print(error_urls)
         return child_urls, error_urls
 
     def get_pages(self,urls):
@@ -36,7 +36,8 @@ class Worker:
 
 
 # testing
-# print(scrape(['https://www.iiit.ac.in/', 'https://scholar.google.com/intl/en/scholar/about.html']))
+# w = Worker()
+# print(w.scrape(["https://open.spotify.com/"]))
 
    
 
