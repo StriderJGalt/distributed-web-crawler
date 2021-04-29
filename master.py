@@ -9,24 +9,36 @@ def get_workers():
     ns = Pyro5.api.locate_ns()
     server_list = ns.list()
     del server_list['Pyro.NameServer']
-    print(server_list)
     workers = []
     for server in server_list:
-            try:
-                worker = Pyro5.client.Proxy(server_list[server])
-                if worker.test():
-                    workers.append(worker)
-            except:
-                pass
+        try:
+            worker = Pyro5.client.Proxy(server_list[server])
+            if worker.test():
+                workers.append(worker)
+        except:
+            pass
     if not workers:
-        print("No workers detected")
+        exit("No workers detected")
     return workers
     # print(worker_uris)
 
+
+def get_list(rooturl,depth):
+    workers = get_workers()
+    adjacency_list = []
+    urls = [rooturl]
+    for n in range(depth):
+        child_dict = []
+        for worker in workers:
+            child_dict.update(worker.get(urls))
+        adjacency_list.update(child_dict)
+        urls = set()
+        for s in child_dict.values():
+            urls.update(s)
+    return adjacency_list
+
+
 def process(line):
-
-    
-
     ls = line.split()
 
     if ls[0] == 'seed':
@@ -36,28 +48,25 @@ def process(line):
             return
 
         workers = get_workers()
-        workers[0].crawl([ls[1]], ls[2])
+        print(workers)
+        workers[0].crawl([ls[1]], int(ls[2]))
         
         print("DONE")
         return
 
-    # if ls[0] == 'graph':
-    #     net = Network()
-    #     net.add_nodes(scraped_urls)
-    #     for x in adjacency_list.keys():
-    #         for y in adjacency_list[x]:
-    #             net.add_node(y) #since error urls are not handled rn
-    #             net.add_edge(x,y)
-    #     # net.enable_physics(False)
-    #     if len(ls)>1:
-    #         if ls[1] == "-s":
-    #             net.show_buttons()
-    #         else:
-    #             print("Command not supported")
-    #             return
-    #     net.show("graph.html")
-    #     print("DONE")        
-    #     return
+    if ls[0] == 'graph':
+        adjacency_list = get_list(ls[1], int(ls[2]))
+        net = Network()
+        for x in adjacency_list.keys():
+            net.add_node(x) 
+            for y in adjacency_list[x]:
+                net.add_node(y) 
+                net.add_edge(x,y)
+        # net.enable_physics(False)
+        net.show_buttons()
+        net.show("graph.html")
+        print("DONE")        
+        return
 
     # if ls[0] == 'update':
     #     url = ls[1]
