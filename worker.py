@@ -66,21 +66,24 @@ class Worker:
         # return { url: self.pages[url] for url in urls }
 
     def remove_duplicates(self,urls):
-        # with self._lock:
         # already_processed_urls = list(self.adjacency_list.keys())
         # print(urls)
-        new_urls = []
-        for url in urls:
-            if url not in self.adjacency_list.keys():
-                new_urls.append(url)
-        return new_urls
+        with self._lock:
+            new_urls = []
+            to_be_crawled_urls = [] 
+            for url in urls:
+                if url not in self.adjacency_list.keys():
+                    new_urls.append(url)
+                else:
+                    to_be_crawled_urls += list(self.adjacency_list[url])
+        return new_urls, to_be_crawled_urls
 
     @Pyro5.server.oneway
     def crawl(self,urls, depth):
         while True:
             print("crawling depth {}".format(depth))
             # remove already scraped urls
-            urls = self.remove_duplicates(urls)
+            urls, urls_to_be_crawled = self.remove_duplicates(urls)
             # scrape
             cu, eu = self.scrape(urls)
             # update adjacency list
@@ -89,9 +92,8 @@ class Worker:
             # print('al')
             # print(self.adjacency_list)
             # collect after removing already scraped urls from child urls
-            urls_to_be_crawled = []
             for url in cu.keys():
-                urls_to_be_crawled += self.remove_duplicates(cu[url])
+                urls_to_be_crawled += list(cu[url])
             # print('child urls to be crawled')
             # print(urls_to_be_crawled)
             # return if crawl depth is satisfied
