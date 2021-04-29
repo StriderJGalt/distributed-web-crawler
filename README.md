@@ -30,9 +30,11 @@ Currently supported queries:
   - Saves the graph to specified file and open in browser. Use -s flag if u need to view graph settings.
   Eg: `graph -s`
 * update url
-  - Updates the adjacency list of the url
+  - Updates the adjacency list of the url in all worker nodes
   Eg: `update https://iiit.ac.in`
-
+* pagerank
+  - Calculates the pagerank of whole graph
+  Eg: `pagerank`
 
 use ctrl-d to exit
 

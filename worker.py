@@ -36,7 +36,12 @@ class Worker:
         self.adjacency_list = {}
         self.worker_incharge = {}
         self._lock = threading.Lock()
-    
+        self.val = 0
+
+    def val(self):
+        return self.val
+
+        
     def test(self):
         return True
 
@@ -79,8 +84,9 @@ class Worker:
         return new_urls, to_be_crawled_urls
 
     @Pyro5.server.oneway
-    def crawl(self,urls, depth):
+    def crawl(self, urls, depth):
         while True:
+            self.val = 1
             print("crawling depth {}".format(depth))
             # remove already scraped urls
             urls, urls_to_be_crawled = self.remove_duplicates(urls)
@@ -99,6 +105,7 @@ class Worker:
             # return if crawl depth is satisfied
             if depth == 1:
                 print("returning")
+                self.val = 0
                 return
             # distribute child urls to other workers
             workers = get_other_workers()
@@ -140,7 +147,21 @@ class Worker:
             except:
                 pass
         return al
-        
+
+    def ret(self):
+        return self.adjacency_list
+
+    def upd(self, url):
+        if url not in self.adjacency_list.keys():
+            return
+        print(url)
+        cu, eu = self.scrape([url])
+        print("Updated URLs")
+        print(cu)
+        with self._lock:
+            self.adjacency_list.update(cu)
+            return
+
 # @Pyro5.api.expose
 # @Pyro5.api.behavior(instance_mode="single")
 # class Server:
