@@ -25,10 +25,10 @@ def get_workers():
 
 def get_list(rooturl,depth):
     workers = get_workers()
-    adjacency_list = []
+    adjacency_list = {}
     urls = [rooturl]
     for n in range(depth):
-        child_dict = []
+        child_dict = {}
         for worker in workers:
             child_dict.update(worker.get(urls))
         adjacency_list.update(child_dict)
