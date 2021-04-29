@@ -68,7 +68,7 @@ class Worker:
     def remove_duplicates(self,urls):
         # with self._lock:
         # already_processed_urls = list(self.adjacency_list.keys())
-        print(urls)
+        # print(urls)
         new_urls = []
         for url in urls:
             if url not in self.adjacency_list.keys():
@@ -86,20 +86,23 @@ class Worker:
         with self._lock:
             self.adjacency_list.update(cu)
         print('al')
-        print(self.adjacency_list)
-        # remove already scraped urls from child urls
-        urls_to_be_crawled = self.remove_duplicates(list(cu.values()))
+        # print(self.adjacency_list)
+        # collect after removing already scraped urls from child urls
+        urls_to_be_crawled = []
+        for url in cu.keys():
+            urls_to_be_crawled += self.remove_duplicates(cu[url])
         print('child urls to be crawled')
         print(urls_to_be_crawled)
         # return if crawl depth is satisfied
-        if depth <= 1:
+        if depth == 1:
+            print("returning")
             return
         # distribute child urls to other workers
         workers = get_other_workers()
         print("other workers")
         print(workers)
         num_urls_per_worker = max(
-            (len(urls_to_be_crawled)//len(workers))+1,
+            (len(urls_to_be_crawled)//(len(workers)+1))+1,
             MIN_URL_LIMIT)
         print('num_urls_per_worker')
         print(num_urls_per_worker)
@@ -121,7 +124,7 @@ class Worker:
                     self.worker_incharge[url] = worker_index
             workers[worker_index].crawl(urlgroup,depth-1)
             worker_index += 1
-        print('finish depth {}".format(depth)')
+        print('finish depth {}'.format(depth))
         self.crawl(next_urls,depth-1)
         
     def get(self, urls, depth):
