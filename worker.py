@@ -8,7 +8,7 @@ MIN_URL_LIMIT = 20
 worker_number = -1
 
 def get_other_workers():
-    # get worker nodes
+    # returns array of worker proxies excluding self
     ns = Pyro5.api.locate_ns()
     server_list = ns.list()
     workers = []
@@ -25,42 +25,52 @@ def get_other_workers():
     if not workers:
         print("No other workers detected")
     return workers
-    # print(workers)
 
 
 @Pyro5.api.expose
 @Pyro5.api.behavior(instance_mode="single")
 class Worker:
     def __init__(self):
+        # stores the html of all scraped pages
         self.pages = {}
+        # stores the child urls of each url
         self.adjacency_list = {}
+        # stores which other worker contains the children of these urls
         self.worker_incharge = {}
+        # used to make object thread safe
         self._lock = threading.Lock()
         self.val = 0
 
     def getval(self):
         with self._lock:
             return self.val
-    # v = str(self.val)
         
     def test(self):
+        # used to check whether server is online
         return True
 
     def scrape(self,url_list):
+
         session = HTMLSession()
         child_urls = {}
         error_urls = []
         for url in url_list:
             try:
+                # downloads the page
                 r = session.get(url)
+                # extract links
                 withoutrender = r.html.absolute_links
+                # render js
                 # r.html.render()
                 withrender = r.html.absolute_links
+                # return links present in html as well after rendering
                 child_urls[url] = withoutrender.union(withrender)
+                # store the html for later retrieval
                 with self._lock:
                     self.pages[url] = r.text
             except:
                 error_urls.append(url)
+        # print log
         print("child URLs len")
         print(len(child_urls))
         print("error URLs")
@@ -74,6 +84,7 @@ class Worker:
         # return { url: self.pages[url] for url in urls }
 
     def remove_duplicates(self,urls):
+        # remove already scraped urls
         with self._lock:
             new_urls = []
             to_be_crawled_urls = [] 
@@ -84,7 +95,7 @@ class Worker:
                     to_be_crawled_urls += list(self.adjacency_list[url])
         return new_urls, to_be_crawled_urls
 
-    @Pyro5.server.oneway
+    @Pyro5.server.oneway #makes it a non blocking call
     def crawl(self, urls, depth):
         print("start crawling at depth {}".format(depth))
         with self._lock:
@@ -171,6 +182,7 @@ class Worker:
 
 
 daemon = Pyro5.server.Daemon() 
+# If connecting over internet unccoment below and replace hostname and port
 # ns = Pyro5.api.locate_ns(host="gramaguru.local", port=8880)        
 ns = Pyro5.api.locate_ns()     
 server_list = ns.list()
