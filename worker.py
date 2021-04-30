@@ -58,7 +58,7 @@ class Worker:
                 withrender = r.html.absolute_links
                 child_urls[url] = withoutrender.union(withrender)
                 with self._lock:
-                    self.pages[url] = r.html
+                    self.pages[url] = r.text
             except:
                 error_urls.append(url)
         print("child URLs len")
@@ -164,7 +164,7 @@ class Worker:
         print("Updated URLs")
         with self._lock:
             for k in cu.keys():
-                print(cu[k])
+                # print(cu[k])
                 self.adjacency_list[k] = cu[k]
                 print(self.adjacency_list[k])
         return

@@ -159,7 +159,9 @@ def process(line):
             if page == None:
                 continue
             else:
-                print(page)
+                with open('page.html','w') as f:
+                    f.write(page)
+                print("Done")
                 return
         print("Page not found")
         return
