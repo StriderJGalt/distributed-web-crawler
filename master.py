@@ -22,7 +22,6 @@ def get_workers():
     if not workers:
         exit("No workers detected")
     return workers
-    # print(worker_uris)
 
 
 def get_list(rooturl,depth):
@@ -52,7 +51,7 @@ def retval(workers):
         for i in range(len(workers)):
             val = workers[i].getval()
             if val != 0:
-                print('worker {} has not finished'.format(i))
+                # print('worker {} has not finished'.format(i))
                 f = 1
         if f == 0:
             break
@@ -70,7 +69,7 @@ def process(line):
             return
 
         workers = get_workers()
-        print(workers)
+        # print(workers)
         workers[0].crawl([ls[1]], int(ls[2]))
         retval(workers)
         print("DONE")

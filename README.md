@@ -37,6 +37,9 @@ To start client, execute the follwing in a seperate terminal:
   - Calculates the pagerank of whole graph and saves it in 'ppagerank.json'
   - It also supports a flag --graph which generates a graph with the pagerank indicated by the size of the node.
   - Eg: `pagerank`
+* getpage url
+  - Retrieves the html of the page from the worker and save it as 'page.html'
+  - Eg: `getpage https://iiit.ac.in`
 * quit
   - shutdowns the client
   - user can also use ctrl-d to exit
