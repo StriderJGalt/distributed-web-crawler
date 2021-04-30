@@ -2,7 +2,8 @@ import Pyro5.api
 from sys import stdin
 from pyvis.network import Network
 import networkx as nx
-
+import time
+import json
 
     
 def get_workers():
@@ -48,14 +49,14 @@ def get_graph():
 def retval(workers):
     while 1:
         f = 0
-        for worker in workers:
-            print(worker.val())
-            if worker.val() != 0:
+        for i in range(len(workers)):
+            val = workers[i].getval()
+            if val != 0:
+                print('worker {} has not finished'.format(i))
                 f = 1
         if f == 0:
             break
-        sleep(1)
-
+        time.sleep(1)
     return
 
 
@@ -71,7 +72,7 @@ def process(line):
         workers = get_workers()
         print(workers)
         workers[0].crawl([ls[1]], int(ls[2]))
-        # retval(workers)
+        retval(workers)
         print("DONE")
         return
 
@@ -81,7 +82,7 @@ def process(line):
             print("Usage: graph seed_url depth_pages_to_be_displayed")
 
         adjacency_list = get_list(ls[1], int(ls[2]))
-        net = Network()
+        net = Network(height=900, width=1800)
         for x in adjacency_list.keys():
             net.add_node(x) 
             for y in adjacency_list[x]:
@@ -113,9 +114,9 @@ def process(line):
         return
 
     if ls[0] == 'pagerank':
-        if len(ls) != 1:
+        if len(ls) > 2:
             print("Error: invalid number of arguments!")
-            print("Usage: pagerank")
+            print("Usage: 'pagerank' or 'pagrank --graph' ")
             return
 
         G = nx.DiGraph()
@@ -130,15 +131,38 @@ def process(line):
                     G.add_edge(x,y)
         
         pr = nx.pagerank(G)
-        print(pr)
+
+        if len(ls) > 1 and ls[1] == '--graph':
+            scale = 50/max(pr.values())
+            for node in pr.keys():
+                G.nodes[node]['size'] = pr[node]*scale
+            net = Network(height=900, width=1800)
+            net.from_nx(G)
+            net.show_buttons()
+            net.show("prgraph.html")
+        else:
+            with open('pagerank.json','w') as f:
+                json.dump(pr,f)
         print("DONE")
+        # print(pr)
         return
 
 
-    if ls[0] == 'print':
+    if ls[0] == 'getpage':
+        try:
+            url = ls[1]
+        except:
+            print("usage: getpage url")
         workers = get_workers()
-        print(workers[0].get([ls[1]], ls[2]))
-
+        for worker in workers:
+            page = worker.get_page(url)
+            if page == None:
+                continue
+            else:
+                print(page)
+                return
+        print("Page not found")
+        return
     else:
         print("Command not supported")
         return

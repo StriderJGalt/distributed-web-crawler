@@ -38,9 +38,10 @@ class Worker:
         self._lock = threading.Lock()
         self.val = 0
 
-    def val(self):
-        return self.val
-
+    def getval(self):
+        with self._lock:
+            return self.val
+    # v = str(self.val)
         
     def test(self):
         return True
@@ -60,19 +61,19 @@ class Worker:
                     self.pages[url] = r.html
             except:
                 error_urls.append(url)
-        print("child URLs")
-        print(child_urls)
+        print("child URLs len")
+        print(len(child_urls))
         print("error URLs")
         print(error_urls)
         return child_urls, error_urls
 
-    def get_pages(self,url):
-        return self.pages[url]
+    def get_page(self,url):
+        if url in self.pages.keys():
+            return self.pages[url]
+        return
         # return { url: self.pages[url] for url in urls }
 
     def remove_duplicates(self,urls):
-        # already_processed_urls = list(self.adjacency_list.keys())
-        # print(urls)
         with self._lock:
             new_urls = []
             to_be_crawled_urls = [] 
@@ -85,8 +86,10 @@ class Worker:
 
     @Pyro5.server.oneway
     def crawl(self, urls, depth):
+        print("start crawling at depth {}".format(depth))
+        with self._lock:
+            self.val += 1
         while True:
-            self.val = 1
             print("crawling depth {}".format(depth))
             # remove already scraped urls
             urls, urls_to_be_crawled = self.remove_duplicates(urls)
@@ -100,22 +103,24 @@ class Worker:
             # collect after removing already scraped urls from child urls
             for url in cu.keys():
                 urls_to_be_crawled += list(cu[url])
-            # print('child urls to be crawled')
-            # print(urls_to_be_crawled)
+            print('no child urls to be crawled')
+            print(len(urls_to_be_crawled))
             # return if crawl depth is satisfied
             if depth == 1:
+                print('finish depth {}'.format(depth))
                 print("returning")
-                self.val = 0
+                with self._lock:
+                    self.val -= 1
                 return
             # distribute child urls to other workers
             workers = get_other_workers()
-            # print("other workers")
-            # print(workers)
+            print("no other workers")
+            print(len(workers))
             num_urls_per_worker = max(
                 (len(urls_to_be_crawled)//(len(workers)+1))+1,
                 MIN_URL_LIMIT)
-            # print('num_urls_per_worker')
-            # print(num_urls_per_worker)
+            print('num_urls_per_worker')
+            print(num_urls_per_worker)
             next_urls = []
             for i in range(min(len(urls_to_be_crawled),
                                     num_urls_per_worker)):
@@ -133,7 +138,7 @@ class Worker:
                         urlgroup.append(url)
                         self.worker_incharge[url] = worker_index
                 workers[worker_index].crawl(urlgroup,depth-1)
-            worker_index += 1
+                worker_index += 1
             urls = next_urls
             print('finish depth {}'.format(depth))
             depth -= 1
@@ -157,26 +162,16 @@ class Worker:
         print(url)
         cu, eu = self.scrape([url])
         print("Updated URLs")
-        print(cu)
         with self._lock:
-            self.adjacency_list.update(cu)
-            return
+            for k in cu.keys():
+                print(cu[k])
+                self.adjacency_list[k] = cu[k]
+                print(self.adjacency_list[k])
+        return
 
-# @Pyro5.api.expose
-# @Pyro5.api.behavior(instance_mode="single")
-# class Server:
-#     def __init__(self):
-#         self.job_queue = mp.Queue()
-#         self.worker = Worker()
 
-#     def test(self):
-#         return True
-   
-#     def seed(self,urls, depth):
-#         self.job_queue.put(('CRAWL',urls,depth))
-#         return True
-
-daemon = Pyro5.server.Daemon()         
+daemon = Pyro5.server.Daemon() 
+# ns = Pyro5.api.locate_ns(host="gramaguru.local", port=8880)        
 ns = Pyro5.api.locate_ns()     
 server_list = ns.list()
 worker_number = len(server_list.keys())    
